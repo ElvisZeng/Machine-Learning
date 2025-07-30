@@ -10,26 +10,10 @@ python3 --version
 
 # 检查依赖包
 echo "🔍 检查依赖包..."
-python3 -c "
-import sys
-packages = ['streamlit', 'pandas', 'numpy', 'sklearn', 'plotly', 'matplotlib', 'seaborn', 'ta', 'joblib', 'xgboost', 'lightgbm', 'catboost']
-failed = []
-for pkg in packages:
-    try:
-        __import__(pkg)
-        print(f'✅ {pkg}')
-    except ImportError:
-        print(f'❌ {pkg}')
-        failed.append(pkg)
-if failed:
-    print(f'\\n❌ 缺少依赖包: {failed}')
-    print('请运行: pip3 install --break-system-packages --user -r requirements.txt')
-    sys.exit(1)
-else:
-    print('\\n✅ 所有依赖包已安装')
-"
+python3 check_dependencies.py
 
 if [ $? -ne 0 ]; then
+    echo "❌ 依赖检查失败，请先安装缺失的包"
     exit 1
 fi
 

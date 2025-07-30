@@ -127,7 +127,7 @@ def test_imports():
     print("🧪 测试包导入...")
     
     required_packages = [
-        'streamlit', 'pandas', 'numpy', 'scikit-learn', 
+        'streamlit', 'pandas', 'numpy', 'sklearn', 
         'plotly', 'matplotlib', 'seaborn', 'ta', 'joblib',
         'xgboost', 'lightgbm', 'catboost'
     ]

@@ -11,7 +11,7 @@ import importlib.util
 def check_dependencies():
     """检查依赖包是否已安装"""
     required_packages = [
-        'streamlit', 'pandas', 'numpy', 'scikit-learn', 
+        'streamlit', 'pandas', 'numpy', 'sklearn', 
         'plotly', 'matplotlib', 'seaborn', 'ta', 'joblib',
         'xgboost', 'lightgbm', 'catboost'
     ]

@@ -47,20 +47,36 @@ cd futures-strategy-analyzer
 
 2. **安装依赖包**
 ```bash
+# 方法1: 使用pip安装（推荐）
+pip3 install --break-system-packages --user -r requirements.txt
+
+# 方法2: 如果遇到权限问题，可以创建虚拟环境
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# 或 venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-3. **生成示例数据（可选）**
+3. **检查依赖包（可选）**
 ```bash
-python sample_data.py
+python3 check_dependencies.py
 ```
 
-4. **启动应用程序**
+4. **生成示例数据（可选）**
 ```bash
-streamlit run app.py
+python3 sample_data.py
 ```
 
-5. **在浏览器中打开**
+5. **启动应用程序**
+```bash
+# 方法1: 使用启动脚本（推荐）
+./start.sh
+
+# 方法2: 手动启动
+python3 -m streamlit run app.py
+```
+
+6. **在浏览器中打开**
 ```
 http://localhost:8501
 ```
