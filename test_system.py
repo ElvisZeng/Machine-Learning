@@ -60,14 +60,14 @@ def test_analyzer_class():
         
         # 测试数据加载
         column_mapping = {
-            'date': 'date',
-            'contract': 'contract',
-            'open': 'open',
-            'high': 'high',
-            'low': 'low',
-            'close': 'close',
-            'volume': 'volume',
-            'open_interest': 'open_interest'
+            '交易日': 'date',
+            '合约': 'contract',
+            '开盘价': 'open',
+            '最高价': 'high',
+            '最低价': 'low',
+            '收盘价': 'close',
+            '成交量': 'volume',
+            '持仓量': 'open_interest'
         }
         
         success, message = analyzer.load_data('test_data.csv', column_mapping)

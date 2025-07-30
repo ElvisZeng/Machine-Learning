@@ -94,8 +94,28 @@ class FuturesStrategyAnalyzer:
             for col in numeric_columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
             
-            # 删除缺失值
-            df = df.dropna()
+            # 处理可选列（如果存在）
+            optional_columns = {
+                'turnover': '成交金额',
+                'settle': '结算价', 
+                'pre_settle': '前结算价',
+                'variety': '品种'
+            }
+            
+            for eng_col, chn_col in optional_columns.items():
+                if chn_col in df.columns and eng_col not in df.columns:
+                    df[eng_col] = pd.to_numeric(df[chn_col], errors='coerce')
+                elif eng_col in df.columns:
+                    df[eng_col] = pd.to_numeric(df[eng_col], errors='coerce')
+            
+            # 删除缺失值（只删除关键列的缺失值）
+            df = df.dropna(subset=['open', 'high', 'low', 'close', 'volume', 'open_interest'])
+            
+            # 对于可选列，用0填充缺失值
+            optional_numeric_columns = ['turnover', 'settle', 'pre_settle']
+            for col in optional_numeric_columns:
+                if col in df.columns:
+                    df[col] = df[col].fillna(0)
             
             self.data = df
             return True, "数据加载成功！"
@@ -140,6 +160,20 @@ class FuturesStrategyAnalyzer:
             df['volume_ma'] = df['volume'].rolling(window=20).mean()
             df['volume_ratio'] = df['volume'] / df['volume_ma']
             
+            # 成交金额指标（如果存在）
+            if 'turnover' in df.columns:
+                df['turnover_ma'] = df['turnover'].rolling(window=20).mean()
+                df['turnover_ratio'] = df['turnover'] / df['turnover_ma']
+                df['avg_price'] = df['turnover'] / df['volume']  # 平均成交价
+            
+            # 结算价指标（如果存在）
+            if 'settle' in df.columns:
+                df['settle_change'] = df['settle'].pct_change()
+                df['close_vs_settle'] = df['close'] / df['settle'] - 1
+                
+            if 'pre_settle' in df.columns:
+                df['settle_vs_pre_settle'] = df['settle'] / df['pre_settle'] - 1
+            
             # 波动率指标
             df['volatility'] = df['close'].rolling(window=20).std()
             df['atr'] = ta.volatility.AverageTrueRange(df['high'], df['low'], df['close']).average_true_range()
@@ -148,8 +182,9 @@ class FuturesStrategyAnalyzer:
             df['adx'] = ta.trend.ADXIndicator(df['high'], df['low'], df['close']).adx()
             df['cci'] = ta.trend.CCIIndicator(df['high'], df['low'], df['close']).cci()
             
-            # 删除包含NaN的行
-            df = df.dropna()
+            # 删除包含NaN的行（只删除关键特征的NaN）
+            key_features = ['price_change', 'rsi', 'macd', 'volume_ratio']
+            df = df.dropna(subset=key_features)
             
             self.features = df
             return True, "特征创建成功！"
@@ -181,7 +216,7 @@ class FuturesStrategyAnalyzer:
             df['target'] = np.select(conditions, choices, default=0)
             
             # 删除最后几行（没有未来数据）
-            df = df.dropna()
+            df = df.dropna(subset=['target'])
             
             self.target = df
             return True, "目标变量创建成功！"
@@ -204,6 +239,16 @@ class FuturesStrategyAnalyzer:
                 'rsi', 'macd', 'macd_signal', 'bb_width', 'volume_ratio',
                 'volatility', 'atr', 'adx', 'cci'
             ]
+            
+            # 添加可选特征（如果存在）
+            optional_features = [
+                'turnover_ratio', 'avg_price', 'settle_change', 
+                'close_vs_settle', 'settle_vs_pre_settle'
+            ]
+            
+            for feature in optional_features:
+                if feature in df.columns:
+                    feature_columns.append(feature)
             
             # 确保所有特征列都存在
             available_features = [col for col in feature_columns if col in df.columns]
@@ -263,6 +308,16 @@ class FuturesStrategyAnalyzer:
                 'rsi', 'macd', 'macd_signal', 'bb_width', 'volume_ratio',
                 'volatility', 'atr', 'adx', 'cci'
             ]
+            
+            # 添加可选特征（如果存在）
+            optional_features = [
+                'turnover_ratio', 'avg_price', 'settle_change', 
+                'close_vs_settle', 'settle_vs_pre_settle'
+            ]
+            
+            for feature in optional_features:
+                if feature in df.columns:
+                    feature_columns.append(feature)
             
             available_features = [col for col in feature_columns if col in df.columns]
             X_latest = df[available_features].iloc[-1:].values
@@ -346,19 +401,50 @@ if uploaded_file is not None:
     
     # 列映射配置
     st.sidebar.header("列映射配置")
-    col1, col2 = st.sidebar.columns(2)
+    
+    # 智能列映射（基于常见的中文列名）
+    smart_mapping = {
+        'date': ['交易日', 'date', '日期', 'Date', 'DATE'],
+        'contract': ['合约', 'symbol', '合约代码', 'Contract', 'CONTRACT'],
+        'open': ['开盘价', 'open', 'Open', 'OPEN'],
+        'high': ['最高价', 'high', 'High', 'HIGH'],
+        'low': ['最低价', 'low', 'Low', 'LOW'],
+        'close': ['收盘价', 'close', 'Close', 'CLOSE'],
+        'volume': ['成交量', 'volume', 'Volume', 'VOLUME'],
+        'open_interest': ['持仓量', 'open_interest', 'Open_Interest', 'OPEN_INTEREST']
+    }
+    
+    # 自动检测列映射
+    auto_mapping = {}
+    for eng_col, possible_names in smart_mapping.items():
+        for col_name in df_preview.columns:
+            if col_name in possible_names:
+                auto_mapping[col_name] = eng_col
+                break
+    
+    st.sidebar.info("💡 系统已自动检测列映射，请确认或手动调整")
+    
+    col1, col2 = st.columns(2)
     
     with col1:
-        date_col = st.selectbox("日期列", df_preview.columns, index=0)
-        contract_col = st.selectbox("合约列", df_preview.columns, index=1)
-        open_col = st.selectbox("开盘价列", df_preview.columns, index=2)
-        high_col = st.selectbox("最高价列", df_preview.columns, index=3)
+        date_col = st.selectbox("日期列", df_preview.columns, 
+                               index=df_preview.columns.get_loc(auto_mapping.get('date', df_preview.columns[0])) if auto_mapping.get('date') in df_preview.columns else 0)
+        contract_col = st.selectbox("合约列", df_preview.columns, 
+                                   index=df_preview.columns.get_loc(auto_mapping.get('contract', df_preview.columns[1])) if auto_mapping.get('contract') in df_preview.columns else 1)
+        open_col = st.selectbox("开盘价列", df_preview.columns, 
+                               index=df_preview.columns.get_loc(auto_mapping.get('open', df_preview.columns[2])) if auto_mapping.get('open') in df_preview.columns else 2)
+        high_col = st.selectbox("最高价列", df_preview.columns, 
+                               index=df_preview.columns.get_loc(auto_mapping.get('high', df_preview.columns[3])) if auto_mapping.get('high') in df_preview.columns else 3)
     
     with col2:
-        low_col = st.selectbox("最低价列", df_preview.columns, index=4)
-        close_col = st.selectbox("收盘价列", df_preview.columns, index=5)
-        volume_col = st.selectbox("成交量列", df_preview.columns, index=6)
-        oi_col = st.selectbox("持仓量列", df_preview.columns, index=7)
+        low_col = st.selectbox("最低价列", df_preview.columns, 
+                              index=df_preview.columns.get_loc(auto_mapping.get('low', df_preview.columns[4])) if auto_mapping.get('low') in df_preview.columns else 4)
+        close_col = st.selectbox("收盘价列", df_preview.columns, 
+                                index=df_preview.columns.get_loc(auto_mapping.get('close', df_preview.columns[5])) if auto_mapping.get('close') in df_preview.columns else 5)
+        volume_col = st.selectbox("成交量列", df_preview.columns, 
+                                 index=df_preview.columns.get_loc(auto_mapping.get('volume', df_preview.columns[6])) if auto_mapping.get('volume') in df_preview.columns else 6)
+        oi_col = st.selectbox("持仓量列", df_preview.columns, 
+                             index=df_preview.columns.get_loc(auto_mapping.get('open_interest', df_preview.columns[7])) if auto_mapping.get('open_interest') in df_preview.columns else 7)
     
     # 创建列映射
     column_mapping = {
