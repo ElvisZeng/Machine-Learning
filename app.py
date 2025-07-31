@@ -430,10 +430,10 @@ if uploaded_file is not None:
     # 列映射配置
     st.sidebar.header("列映射配置")
     
-    # 智能列映射（基于常见的中文和英文列名）
+    # 智能列映射（优先支持用户的标准格式）
     smart_mapping = {
         'date': ['date', '交易日', 'Date', 'DATE'],
-        'contract': ['symbol', 'contract', '合约', 'Contract', 'CONTRACT'],
+        'contract': ['symbol', 'contract', '合约', 'Contract', 'CONTRACT'],  # symbol优先
         'open': ['open', '开盘价', 'Open', 'OPEN'],
         'high': ['high', '最高价', 'High', 'HIGH'],
         'low': ['low', '最低价', 'Low', 'LOW'],
