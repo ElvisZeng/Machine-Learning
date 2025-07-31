@@ -99,6 +99,12 @@ contract,date,open,high,low,close,volume,open_interest
 IF2401,2023-01-01,3500.0,3520.0,3480.0,3510.0,5000,100000
 ```
 
+#### 格式3: 标准英文列名（symbol格式）
+```csv
+symbol,date,open,high,low,close,volume,open_interest,turnover,settle,pre_settle,variety
+IF2401,2023-01-01,3500.0,3520.0,3480.0,3510.0,5000,100000,17550000.0,3510.0,3500.0,IF
+```
+
 ### 列名映射
 
 | 必需列 | 中文列名 | 英文列名 | 描述 | 示例 |

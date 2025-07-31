@@ -78,12 +78,40 @@ class FuturesStrategyAnalyzer:
             # 重命名列
             df = df.rename(columns=column_mapping)
             
-            # 确保必要的列存在
-            required_columns = ['date', 'contract', 'open', 'high', 'low', 'close', 'volume', 'open_interest']
-            missing_columns = [col for col in required_columns if col not in df.columns]
+            # 确保必要的列存在（支持多种列名格式）
+            required_column_mappings = {
+                'date': ['date', '交易日', 'Date', 'DATE'],
+                'contract': ['contract', 'symbol', '合约', 'Contract', 'CONTRACT'],
+                'open': ['open', '开盘价', 'Open', 'OPEN'],
+                'high': ['high', '最高价', 'High', 'HIGH'],
+                'low': ['low', '最低价', 'Low', 'LOW'],
+                'close': ['close', '收盘价', 'Close', 'CLOSE'],
+                'volume': ['volume', '成交量', 'Volume', 'VOLUME'],
+                'open_interest': ['open_interest', '持仓量', 'Open_Interest', 'OPEN_INTEREST']
+            }
+            
+            # 检查并映射列名
+            missing_columns = []
+            column_rename_mapping = {}
+            
+            for required_col, possible_names in required_column_mappings.items():
+                found = False
+                for possible_name in possible_names:
+                    if possible_name in df.columns:
+                        if possible_name != required_col:
+                            column_rename_mapping[possible_name] = required_col
+                        found = True
+                        break
+                
+                if not found:
+                    missing_columns.append(required_col)
             
             if missing_columns:
                 raise ValueError(f"缺少必要的列: {missing_columns}")
+            
+            # 重命名列以匹配系统内部期望的列名
+            if column_rename_mapping:
+                df = df.rename(columns=column_rename_mapping)
             
             # 处理日期列
             df['date'] = pd.to_datetime(df['date'])
@@ -402,16 +430,16 @@ if uploaded_file is not None:
     # 列映射配置
     st.sidebar.header("列映射配置")
     
-    # 智能列映射（基于常见的中文列名）
+    # 智能列映射（基于常见的中文和英文列名）
     smart_mapping = {
-        'date': ['交易日', 'date', '日期', 'Date', 'DATE'],
-        'contract': ['合约', 'symbol', '合约代码', 'Contract', 'CONTRACT'],
-        'open': ['开盘价', 'open', 'Open', 'OPEN'],
-        'high': ['最高价', 'high', 'High', 'HIGH'],
-        'low': ['最低价', 'low', 'Low', 'LOW'],
-        'close': ['收盘价', 'close', 'Close', 'CLOSE'],
-        'volume': ['成交量', 'volume', 'Volume', 'VOLUME'],
-        'open_interest': ['持仓量', 'open_interest', 'Open_Interest', 'OPEN_INTEREST']
+        'date': ['date', '交易日', 'Date', 'DATE'],
+        'contract': ['symbol', 'contract', '合约', 'Contract', 'CONTRACT'],
+        'open': ['open', '开盘价', 'Open', 'OPEN'],
+        'high': ['high', '最高价', 'High', 'HIGH'],
+        'low': ['low', '最低价', 'Low', 'LOW'],
+        'close': ['close', '收盘价', 'Close', 'CLOSE'],
+        'volume': ['volume', '成交量', 'Volume', 'VOLUME'],
+        'open_interest': ['open_interest', '持仓量', 'Open_Interest', 'OPEN_INTEREST']
     }
     
     # 自动检测列映射
